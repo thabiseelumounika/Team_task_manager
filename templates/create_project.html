@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Create Project</title>
+
+<style>
+
+body{
+    margin:0;
+    padding:0;
+    background:black;
+    font-family:Arial, sans-serif;
+    color:white;
+}
+
+.container{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-top:80px;
+}
+
+.card{
+    width:500px;
+    background:#111;
+    padding:40px;
+    border-radius:15px;
+    box-shadow:0px 0px 20px #ff66cc;
+}
+
+h1{
+    text-align:center;
+    color:#ff66cc;
+    margin-bottom:30px;
+}
+
+input{
+    width:100%;
+    padding:15px;
+    background:#222;
+    border:none;
+    border-radius:8px;
+    color:white;
+    font-size:16px;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    margin-top:25px;
+    background:#ff66cc;
+    border:none;
+    border-radius:8px;
+    color:white;
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#ff3399;
+}
+
+</style>
+
+</head>
+
+<body>
+
+{% include 'navbar.html' %}
+
+<div class="container">
+
+<div class="card">
+
+<h1>Create Project</h1>
+
+<form method="POST">
+
+<input
+type="text"
+name="project_name"
+placeholder="Enter Project Name"
+required>
+
+<button type="submit">
+Create Project
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Signup</title>
+
+<style>
+
+body{
+    background:black;
+    font-family:Arial;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+}
+
+.card{
+    width:400px;
+    background:#111;
+    padding:40px;
+    border-radius:15px;
+    box-shadow:0px 0px 25px #ff66cc;
+}
+
+h2{
+    text-align:center;
+    color:#ff66cc;
+    margin-bottom:25px;
+}
+
+input,
+select{
+    width:100%;
+    padding:12px;
+    margin-top:15px;
+    background:#222;
+    border:none;
+    border-radius:8px;
+    color:white;
+    font-size:16px;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:20px;
+    background:#ff66cc;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    font-size:16px;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#ff3399;
+}
+
+.flash{
+    background:#222;
+    color:#ff66cc;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:15px;
+    text-align:center;
+}
+
+.bottom{
+    text-align:center;
+    margin-top:20px;
+    color:white;
+}
+
+a{
+    color:#00ff99;
+    text-decoration:none;
+}
+
+a:hover{
+    color:#00cc77;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="flash">
+            {{ messages[0] }}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<h2>Create Account</h2>
+
+<form method="POST">
+
+<input
+type="text"
+name="username"
+placeholder="Username"
+required>
+
+<input
+type="email"
+name="email"
+placeholder="Email"
+required>
+
+<input
+type="password"
+name="password"
+placeholder="Password"
+required>
+
+<select name="role" required>
+
+<option value="">
+    Select Role
+</option>
+
+<option value="Admin">
+    Admin
+</option>
+
+<option value="Member">
+    Member
+</option>
+
+</select>
+
+<button type="submit">
+Signup
+</button>
+
+</form>
+
+<div class="bottom">
+
+Already have account?
+<a href="/login">
+Login
+</a>
+
+</div>
+
+</div>
+
+</body>
+
+</html>
