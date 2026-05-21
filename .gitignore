@@ -1,0 +1,10 @@
+database.db
+instance/
+__pycache__/
+*.pyc
+*.pkl
+*.zip
+*.exe
+*.docx
+*.pdf
+*.mp3
