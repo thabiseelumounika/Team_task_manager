@@ -10,24 +10,25 @@ app = Flask(__name__)
 # CONFIG
 # =========================
 
-app.secret_key = "secretkey"
+app.secret_key = os.environ.get("SECRET_KEY", "secretkey")
 
-# Railway-safe database path
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'database.db')
+# Railway-safe database path (IMPORTANT FIX)
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
 # =========================
-# DATABASE TABLES
+# DATABASE MODELS
 # =========================
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100))
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(200))
-    role = db.Column(db.String(20))
+    username = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
 
 
 class Project(db.Model):
@@ -39,10 +40,17 @@ class Project(db.Model):
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
-    status = db.Column(db.String(50))
+    status = db.Column(db.String(50), default="Pending")
     assigned_to = db.Column(db.String(100))
     due_date = db.Column(db.String(100))
     project_id = db.Column(db.Integer)
+
+# =========================
+# CREATE TABLES (RAILWAY FIX)
+# =========================
+
+with app.app_context():
+    db.create_all()
 
 # =========================
 # ROUTES
@@ -125,7 +133,6 @@ def logout():
     flash("Logged out")
     return redirect('/login')
 
-
 # =========================
 # ERROR HANDLER
 # =========================
@@ -137,12 +144,9 @@ def internal_error(e):
 
 
 # =========================
-# RUN (LOCAL ONLY)
+# RUN (RAILWAY READY)
 # =========================
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
