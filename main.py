@@ -12,9 +12,17 @@ app = Flask(__name__)
 
 app.secret_key = os.environ.get("SECRET_KEY", "secretkey")
 
-# Railway-safe database path (IMPORTANT FIX)
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
+# Use PostgreSQL on Railway (DATABASE_URL), fallback to SQLite for local dev
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    # Railway's PostgreSQL URL starts with postgres://, SQLAlchemy needs postgresql://
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -46,11 +54,12 @@ class Task(db.Model):
     project_id = db.Column(db.Integer)
 
 # =========================
-# CREATE TABLES (RAILWAY FIX)
+# CREATE TABLES ON STARTUP
 # =========================
 
 with app.app_context():
     db.create_all()
+    print("Database tables created successfully!")
 
 # =========================
 # ROUTES
@@ -133,9 +142,156 @@ def logout():
     flash("Logged out")
     return redirect('/login')
 
+
+@app.route('/create_project', methods=['GET', 'POST'])
+def create_project():
+    if 'user' not in session:
+        return redirect('/login')
+    if session.get('role') != 'Admin':
+        flash("Access denied. Admins only.")
+        return redirect('/dashboard')
+
+    if request.method == 'POST':
+        project_name = request.form['project_name']
+        new_project = Project(
+            project_name=project_name,
+            created_by=session['user']
+        )
+        db.session.add(new_project)
+        db.session.commit()
+        flash("Project created successfully!")
+        return redirect('/dashboard')
+
+    return render_template('create_project.html')
+
+
+@app.route('/create_task', methods=['GET', 'POST'])
+def create_task():
+    if 'user' not in session:
+        return redirect('/login')
+    if session.get('role') != 'Admin':
+        flash("Access denied. Admins only.")
+        return redirect('/dashboard')
+
+    users = User.query.all()
+    projects = Project.query.all()
+
+    if request.method == 'POST':
+        title = request.form['title']
+        assigned_to = request.form['assigned_to']
+        status = request.form['status']
+        due_date = request.form['due_date']
+        project_id = request.form['project_id']
+
+        new_task = Task(
+            title=title,
+            assigned_to=assigned_to,
+            status=status,
+            due_date=due_date,
+            project_id=project_id
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        flash("Task created successfully!")
+        return redirect('/dashboard')
+
+    return render_template('create_task.html', users=users, projects=projects)
+
+
+@app.route('/manage_users')
+def manage_users():
+    if 'user' not in session:
+        return redirect('/login')
+    if session.get('role') != 'Admin':
+        flash("Access denied. Admins only.")
+        return redirect('/dashboard')
+
+    users = User.query.all()
+    return render_template('manage_users.html', users=users)
+
+
+@app.route('/delete_user/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    if 'user' not in session:
+        return redirect('/login')
+    if session.get('role') != 'Admin':
+        flash("Access denied. Admins only.")
+        return redirect('/dashboard')
+
+    user = User.query.get(user_id)
+    if user:
+        if user.username == session['user']:
+            flash("You cannot delete your own account.")
+        else:
+            db.session.delete(user)
+            db.session.commit()
+            flash(f"User '{user.username}' deleted successfully.")
+    else:
+        flash("User not found.")
+
+    return redirect('/manage_users')
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        new_password = request.form['new_password']
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.password = generate_password_hash(new_password)
+            db.session.commit()
+            flash("Password reset successful! Please login.")
+            return redirect('/login')
+        else:
+            flash("Email not found.")
+
+    return render_template('forgot_password.html')
+
+
+@app.route('/update_task/<int:task_id>', methods=['POST'])
+def update_task(task_id):
+    if 'user' not in session:
+        return redirect('/login')
+
+    task = Task.query.get(task_id)
+    if task:
+        task.status = request.form['status']
+        db.session.commit()
+        flash("Task updated successfully!")
+    else:
+        flash("Task not found.")
+
+    return redirect('/dashboard')
+
+
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+def delete_task(task_id):
+    if 'user' not in session:
+        return redirect('/login')
+    if session.get('role') != 'Admin':
+        flash("Access denied. Admins only.")
+        return redirect('/dashboard')
+
+    task = Task.query.get(task_id)
+    if task:
+        db.session.delete(task)
+        db.session.commit()
+        flash("Task deleted successfully!")
+    else:
+        flash("Task not found.")
+
+    return redirect('/dashboard')
+
+
 # =========================
-# ERROR HANDLER
+# ERROR HANDLERS
 # =========================
+
+@app.errorhandler(404)
+def not_found_error(e):
+    return redirect('/login')
 
 @app.errorhandler(500)
 def internal_error(e):
